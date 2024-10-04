@@ -130,7 +130,7 @@ if upload_file is not None and ferramenta != '':
         maximo_dias = 28
 
     #escolher entre uma das 3 opções de análise
-    analise = st.sidebar.selectbox("Escolha o tipo de análise: ", ['Mês', 'Dia', 'Hora'])
+    analise = st.sidebar.selectbox("Escolha o tipo de análise: ", ['Mês', 'Dia', 'Hora', 'Média Horas'])
     if analise == 'Dia':
         st.sidebar.write("Esse modo de análise é para cada dia do mês, pegando todos os valores de 0 a 24 horas")
         day = st.sidebar.number_input("Escolha o dia", 1, maximo_dias, 1)
@@ -143,6 +143,8 @@ if upload_file is not None and ferramenta != '':
         st.sidebar.write("""Esse modo de análise apresenta os valores para um horário específico de cada dia do mês. 
                          Por exemplo, ao escolher a hora 3, serão avaliados todos os dados referentes à hora 3 de cada dia""")
         horario = st.sidebar.number_input("Horário para análise", 1, 24, 1)
+    elif analise == 'Média Horas':
+        st.sidebar.write("Esse modo de análise é para o mês inteiro, pegando a média de cada hora do dia")
     
     #lista com as unidades de medida de cada parâmetro a ser inserida no gráfico
     medida = ['(ºC)', '(%)', 'Hectopascal (hPa)', '(graus)', '(m/s)']   
@@ -173,7 +175,7 @@ if upload_file is not None and ferramenta != '':
             horas = list(range(1, 25))  # Colunas de 1 a 25, referente as horas
             
             # Plotar o gráfico de linha usando plotly
-            fig = px.line(x=horas, y=valores_y, labels={'x': 'Hora', 'y': f'{df_aux[coluna].name} - {medida[i]}'}, title=f'Gráfico para {df_aux[coluna].name} - {medida[i]} - dia {day} de {df_aux[coluna][0]} ', markers=True)
+            fig = px.line(x=horas, y=valores_y, labels={'x': 'Hora', 'y': f'{df_aux[coluna].name} - {medida[i]}'}, title=f'Gráfico para {df_aux[coluna].name} - {medida[i]} - dia {day} de {mes_analise} ', markers=True)
             fig.update_layout(
                     xaxis=dict(range=[1, 24],
                         tickmode='linear',
@@ -234,7 +236,7 @@ if upload_file is not None and ferramenta != '':
             minimo = encontrar_min(lista_valores_minimo)
             # Atualizar o layout para adicionar o eixo y2 e y3 sobre y1
             fig.update_layout(
-                title=f'Gráfico para {df_aux[coluna].name} - {medida[i]} - {df_aux[coluna][0]}',
+                title=f'Gráfico para {df_aux[coluna].name} - {medida[i]} - {mes_analise}',
                 xaxis=dict(title='Dia', range=[dia_inicial, dia_final], tickmode='linear', tick0=1, dtick=1), 
                 yaxis=dict(range=[minimo, maximo]),  # Escala para velocidade
                 yaxis2=dict(range=[minimo, maximo], overlaying='y', side='right'),  # Eixo secundário
@@ -248,10 +250,9 @@ if upload_file is not None and ferramenta != '':
             df_dia = df1.iloc[:maximo_dias, horario] #pegar todos os valores da coluna referente ao horário escolhido
             valores_y = df_dia.values
             dias = list(range(1, maximo_dias+1)) #lista com os dias do mês
-            print(dias)
-            print(valores_y)
+            
             fig = px.line(x=dias, y=valores_y, labels={'x': 'Dia', 'y': f'{df_aux[coluna].name}'}, 
-                          title=f'Gráfico para {df_aux[coluna].name} - {medida[i]} - Hora {horario} - {df_aux[coluna][0]} ', markers=True)
+                          title=f'Gráfico para {df_aux[coluna].name} - {medida[i]} - Hora {horario} - {mes_analise} ', markers=True)
             fig.update_layout(
                 xaxis=dict(range=[1, maximo_dias],
                     tickmode='linear',
@@ -260,6 +261,27 @@ if upload_file is not None and ferramenta != '':
                 )
             )
             fig.update_traces(hovertemplate=f'Dia: %{{x}} Hora: {horario}<br>{df_aux[coluna].name}: %{{y}}')
+            st.plotly_chart(fig, use_container_width=True)
+
+        elif analise == "Média Horas":
+            lista_valores_media = []
+            for hora in range(1, 25):
+                df_dia = df1.iloc[:maximo_dias, hora]                
+                valores_y = df_dia.values
+                lista_valores_media.append(valores_y.mean())
+
+            horas = list(range(1, 25)) #lista com os dias escolhidos no intervalo
+            
+            fig = px.line(x=horas, y=lista_valores_media, labels={'x': 'Horas', 'y': f'{df_aux[coluna].name}'}, 
+                          title=f'Gráfico para {df_aux[coluna].name} - {medida[i]} - Média dos horários no mês inteiro de {mes_analise} ', markers=True)
+            fig.update_layout(
+                xaxis=dict(range=[1, 24],
+                    tickmode='linear',
+                    tick0=1,
+                    dtick=1 
+                )
+            ) 
+            fig.update_traces(hovertemplate=f'Hora: %{{x}} <br>{df_aux[coluna].name}: %{{y:.2f}}')
             st.plotly_chart(fig, use_container_width=True)
 
     #analise direcao e velocidade
@@ -515,6 +537,85 @@ if upload_file is not None and ferramenta != '':
             final_filtered_df.index.name = 'Dia'
             final_filtered_df = final_filtered_df.rename(columns={0: f'Valores diários hora {horario}'})
             st.dataframe(final_filtered_df) # mostra data, hora e coluna do laço 
+      
+      
+    elif analise == "Média Horas":
+        lista1_valores_media = []
+        lista2_valores_media = []
+        for hora in range(1, 25):
+            df1_dia = df1.iloc[:maximo_dias, hora]                
+            valores_y1 = df1_dia.values
+            lista1_valores_media.append(valores_y1.mean())
+            df2_dia = df2.iloc[:maximo_dias, hora]                
+            valores_y2 = df2_dia.values
+            lista2_valores_media.append(valores_y2.mean())
+
+        horas = list(range(1, 25)) #lista com os dias escolhidos no intervalo
+
+        fig = go.Figure()
+
+        fig.add_trace(
+            go.Scatter(
+                x=horas, y=lista1_valores_media, mode='lines+markers',
+                name='Direção do Vento',
+                hovertemplate='Hora: %{x}<br>Direção (graus): %{y:.2f}',
+                yaxis='y1', hoverinfo='text'
+            )
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=horas, y=lista2_valores_media, mode='lines+markers',
+                name='Velocidade do Vento',
+                hovertemplate='Hora: %{x}<br> Velocidade (m/s): %{y:.2f}',
+                yaxis='y2', hoverinfo='text'
+            )
+        )   
+
+        maximo1 = encontrar_max(lista1_valores_media)
+        maximo2 = encontrar_max(lista2_valores_media)
+
+        fig.update_layout(
+            title=f'Gráfico para Direção e Velocidade do Vento - Média dos horários no mês inteiro de {mes_analise} ',
+            xaxis=dict(title='Hora', range=[1, 24], tickmode='linear', tick0=1, dtick=1), 
+            yaxis=dict(range=[0, maximo1]), # Escala para direção
+            yaxis2=dict(range=[0, maximo2], overlaying='y', side='right'),  # Escala para velocidade
+            legend=dict(x=0.5, y=1.01, xanchor='center', yanchor='bottom', orientation='h')
+        )
             
+        st.plotly_chart(fig, use_container_width=True) 
+
+        dict_vel = {'Frequencia': 0, 'Calmaria': 0, '0.5 - 2.1': 0, '2.1 - 3.6': 0, '3.6 - 5.7': 0, '5.7 - 8.8': 0, '8.8 - 11.1': 0, '>= 11.1': 0, 'Indices':[]}
+        dict_direcoes = {'N': copy.deepcopy(dict_vel), 'NNE': copy.deepcopy(dict_vel), 'NE': copy.deepcopy(dict_vel), 'ENE': copy.deepcopy(dict_vel), 'E': copy.deepcopy(dict_vel), 'ESE': copy.deepcopy(dict_vel), 'SE': copy.deepcopy(dict_vel), 'SSE': copy.deepcopy(dict_vel),
+                        'S': copy.deepcopy(dict_vel), 'SSO': copy.deepcopy(dict_vel), 'SO': copy.deepcopy(dict_vel), 'OSO': copy.deepcopy(dict_vel), 'O': copy.deepcopy(dict_vel), 'ONO': copy.deepcopy(dict_vel), 'NO': copy.deepcopy(dict_vel), 'NNO': copy.deepcopy(dict_vel)}
+        total = 0  
+
+        for indice, coluna in enumerate(lista1_valores_media):
+            categorizar_direcao_16(dict_direcoes, lista1_valores_media[indice].astype(float), lista2_valores_media[indice].astype(float), indice)
+            total +=1             
+                           
+        titulo_grafico = f"Rosa dos Ventos - {mes_analise} - Média das horas"
+        plotar_rosa(dict_direcoes, total, titulo_grafico)
+        # Multiselect para escolher múltiplas opções
+        options_dir = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSO', 'SO', 'OSO', 'O', 'ONO', 'NO', 'NNO']
+        selected_options = st.multiselect("Filtro de Direções para Rosa dos Ventos de Velocidade e Direção do Vento", options_dir, placeholder="Escolha uma ou mais direções")
+
+        #mudar indices para filtrar o dataframe
+        if selected_options:
+            todos_indices = []
+            for direcao in selected_options:
+                todos_indices.extend(dict_direcoes[direcao]["Indices"])
+            df_lista1 = pd.DataFrame(lista1_valores_media)
+            
+            final_filtered_df = df_lista1.iloc[todos_indices]            
+            
+            #adicionar um filtro por intervalo (ou por direção) e mostrar em um dataframe todos os resultados com dias e horas em que apareceu aquela direção    
+            st.write(f"Tabela Filtro por Direção - {mes_analise} - Média das horas")
+            final_filtered_df.index = final_filtered_df.index + 1
+            final_filtered_df.index.name = 'Hora'
+            final_filtered_df = final_filtered_df.rename(columns={0: 'Valores médios das horas'})
+            st.dataframe(final_filtered_df) # mostra data, hora e coluna do laço 
+        
+      
 else:
     st.write("Aguardando a sua planilha!")
