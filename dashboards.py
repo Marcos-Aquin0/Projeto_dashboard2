@@ -163,7 +163,7 @@ if upload_file is not None and ferramenta != '':
         df1 = pd.read_excel(upload_file, sheet_name = i, engine=ferramenta, skiprows=2)
         df1.columns = df1.columns.astype(str)
         df1 = df1.drop(df1.columns[25:], axis=1)
-        df1 = df1.drop(df1.index[31:])
+        df1 = df1.drop(df1.index[maximo_dias:])
         st.dataframe(df1)
 
         if analise == 'Dia':  
@@ -245,9 +245,11 @@ if upload_file is not None and ferramenta != '':
             st.plotly_chart(fig, use_container_width=True) #plotagem
 
         elif analise == "Hora":
-            df_dia = df1.iloc[:, horario] #pegar todos os valores da coluna referente ao horário escolhido
+            df_dia = df1.iloc[:maximo_dias, horario] #pegar todos os valores da coluna referente ao horário escolhido
             valores_y = df_dia.values
             dias = list(range(1, maximo_dias+1)) #lista com os dias do mês
+            print(dias)
+            print(valores_y)
             fig = px.line(x=dias, y=valores_y, labels={'x': 'Dia', 'y': f'{df_aux[coluna].name}'}, 
                           title=f'Gráfico para {df_aux[coluna].name} - {medida[i]} - Hora {horario} - {df_aux[coluna][0]} ', markers=True)
             fig.update_layout(
@@ -266,7 +268,7 @@ if upload_file is not None and ferramenta != '':
     df1 = pd.read_excel(upload_file, sheet_name = 3, engine=ferramenta, skiprows=2)
     df1.columns = df1.columns.astype(str)
     df1 = df1.drop(df1.columns[25:], axis=1)
-    df1 = df1.drop(df1.index[31:])
+    df1 = df1.drop(df1.index[maximo_dias:])
 
     coluna = df_aux1.columns[0]
     pos = df_aux1[coluna].name.find(")")
@@ -279,7 +281,7 @@ if upload_file is not None and ferramenta != '':
     df2 = pd.read_excel(upload_file, sheet_name = 4, engine=ferramenta, skiprows=2)
     df2.columns = df2.columns.astype(str)
     df2 = df2.drop(df2.columns[25:], axis=1)
-    df2 = df2.drop(df2.index[31:])
+    df2 = df2.drop(df2.index[maximo_dias:])
     
     coluna = df_aux2.columns[0]
     pos = df_aux2[coluna].name.find(")")
@@ -439,10 +441,10 @@ if upload_file is not None and ferramenta != '':
             
 
     elif analise == "Hora":
-        df1_dia = df1.iloc[:, horario]
+        df1_dia = df1.iloc[:maximo_dias, horario]
         valores_y1 = df1_dia.values
 
-        df2_dia = df2.iloc[:, horario]
+        df2_dia = df2.iloc[:maximo_dias, horario]
         valores_y2 = df2_dia.values
         dias = list(range(1, maximo_dias+1))
         
@@ -471,7 +473,7 @@ if upload_file is not None and ferramenta != '':
             
         fig.update_layout(
             title=f'Gráfico para Direção e Velocidade do Vento - {mes_analise} - Hora {horario}',
-            xaxis=dict(title='Dia', range=[1, 31], tickmode='linear', tick0=1, dtick=1), 
+            xaxis=dict(title='Dia', range=[1, maximo_dias], tickmode='linear', tick0=1, dtick=1), 
             yaxis=dict(range=[0, maximo1]), # Escala para direção
             yaxis2=dict(range=[0, maximo2], overlaying='y', side='right'),  # Escala para velocidade
             legend=dict(x=0.5, y=1.01, xanchor='center', yanchor='bottom', orientation='h')
