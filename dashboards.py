@@ -374,7 +374,7 @@ if upload_file is not None and ferramenta != '':
         fig.update_layout(
             title=f'Gráfico para Direção e Velocidade do Vento - {mes_analise} - Dia {day}',
             xaxis=dict(title='Hora', range=[1, 24], tickmode='linear', tick0=1, dtick=1), 
-            yaxis=dict(range=[0, maximo1]), # Escala para direção
+            yaxis=dict(range=[0, 360]), # Escala para direção
             yaxis2=dict(range=[0, maximo2], overlaying='y', side='right'),  # Escala para velocidade
             legend=dict(x=0.5, y=1.01, xanchor='center', yanchor='bottom', orientation='h')
         )
