@@ -102,7 +102,8 @@ if upload_file is None:
     st.image("exemplo1.png")
     st.markdown("""**Certifique-se de manter a seguinte sequência dos parâmetros nas respectivas planilhas: 
                 Temperatura do Ar, Umidade Relativa do Ar, Pressão Atmosférica, Velocidade do Vento e Direção do Vento.**""")
-
+    st.markdown("Escreve o nome do mês por extenso")
+    
 if tipo == 'xls':
     ferramenta = 'xlrd'
 elif tipo == 'xlsx':
@@ -114,14 +115,17 @@ else:
 if upload_file is not None and ferramenta != '':
     #pela identaçao do arquivo, a primeira linha, com df_aux é o mês, depois essa linha é ignorada para considerar as colunas corretamente no dataframe
     df_aux = pd.read_excel(upload_file, sheet_name = 0, engine=ferramenta, nrows=1) 
+    # Substituir "-" por 0 e gerar avisos
+    
     mes_analise = df_aux.iloc[0, 0]
     st.sidebar.write(f"Mês: {mes_analise}") #essa linha é referente ao mês
     st.sidebar.write("Você quer ver os gráficos por mês (dia a dia, usando a média diária), por dia (hora a hora) ou o mês por uma hora em específico?")
     
     #definir o limite de dias, de acordo com o mês (se tem 31, 30 ou 28 dias)
-    opcoes_31 = ["Janeiro", "Março", "Maio", "Julho", "Agosto", "Outubro", "Dezembro"]
-    opcoes_30 = ["Abril", "Junho", "Setembro", "Novembro"]
-    opcoes_28 = ["Fevereiro"]
+    opcoes_31 = ["Janeiro", "Jan", "Março", "mar", "Maio", "maio", "Julho", "jul", 
+                 "Agosto", "ago", "Outubro", "out", "Dezembro", "dez"]
+    opcoes_30 = ["Abril", "abr", "Junho", "jun", "Setembro", "set", "Novembro", "nov"]
+    opcoes_28 = ["Fevereiro", "fev"]
     if any(option in mes_analise for option in opcoes_31):
         maximo_dias = 31
     elif any(option in mes_analise for option in opcoes_30):
@@ -167,6 +171,15 @@ if upload_file is not None and ferramenta != '':
         df1 = df1.drop(df1.columns[25:], axis=1)
         df1 = df1.drop(df1.index[maximo_dias:])
         st.dataframe(df1)
+
+        # Substituir "-" por 0 e gerar avisos
+        for index, row in df1.iterrows():
+            dia = index + 1  # Supondo que os dias começam de 1 e o índice é 0-based
+            for col in df1.columns:
+                if row[col] == "-":
+                    df1.at[index, col] = 0
+                    horario = col  # A coluna representa a hora
+                    st.warning(f"No dia {dia} e horário {horario} não haviam dados, foram considerados como 0.")
 
         if analise == 'Dia':  
             #realizar uma filtragem para pegar apenas os valores do dia escolhido e as 24 horas
@@ -298,6 +311,14 @@ if upload_file is not None and ferramenta != '':
     st.write(f'{df_aux1[coluna].name} - {medida[3]} - {df_aux1[coluna][0]}')
     st.dataframe(df1)
 
+    for index, row in df1.iterrows():
+        dia = index + 1  # Supondo que os dias começam de 1 e o índice é 0-based
+        for col in df1.columns:
+            if row[col] == "-":
+                df1.at[index, col] = 0
+                horario = col  # A coluna representa a hora
+                st.warning(f"No dia {dia} e horário {horario} não haviam dados, foram considerados como 0.")
+
     df_aux2 = pd.read_excel(upload_file, sheet_name = 4, engine=ferramenta, nrows=1) 
     df_aux2.columns = df_aux2.columns.astype(str)
     df2 = pd.read_excel(upload_file, sheet_name = 4, engine=ferramenta, skiprows=2)
@@ -311,6 +332,14 @@ if upload_file is not None and ferramenta != '':
     st.write(f'{df_aux2[coluna].name} - {medida[3]} - {df_aux2[coluna][0]}')
     st.dataframe(df2)
     
+    for index, row in df2.iterrows():
+        dia = index + 1  # Supondo que os dias começam de 1 e o índice é 0-based
+        for col in df2.columns:
+            if row[col] == "-":
+                df2.at[index, col] = 0
+                horario = col  # A coluna representa a hora
+                st.warning(f"No dia {dia} e hora {horario} não haviam dados, foram considerados como 0.")
+
     if analise == 'Dia':
         df1_dia = df1.iloc[day-1:day, 1:25]                
         valores_y1 = df1_dia.iloc[0, :].values
