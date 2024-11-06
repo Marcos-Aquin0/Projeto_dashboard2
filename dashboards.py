@@ -170,17 +170,17 @@ if upload_file is not None and ferramenta != '':
         df1.columns = df1.columns.astype(str)
         df1 = df1.drop(df1.columns[25:], axis=1)
         df1 = df1.drop(df1.index[maximo_dias:])
-        st.dataframe(df1)
+        
 
         # Substituir "-" por 0 e gerar avisos
         for index, row in df1.iterrows():
-            dia = index + 1  # Supondo que os dias começam de 1 e o índice é 0-based
+            dia = index + 1
             for col in df1.columns:
                 if row[col] == "-":
-                    df1.at[index, col] = 0
-                    horario = col  # A coluna representa a hora
+                    horario = col
                     st.warning(f"No dia {dia} e horário {horario} não haviam dados, foram considerados como 0.")
-
+        df1 = df1.apply(pd.to_numeric, errors='coerce').fillna(0)
+        st.dataframe(df1)
         if analise == 'Dia':  
             #realizar uma filtragem para pegar apenas os valores do dia escolhido e as 24 horas
             df_dia = df1.iloc[day-1:day, 1:25]                
@@ -309,16 +309,16 @@ if upload_file is not None and ferramenta != '':
     pos = df_aux1[coluna].name.find(")")
     df_aux1[coluna].name = df_aux1[coluna].name[:pos+1]
     st.write(f'{df_aux1[coluna].name} - {medida[3]} - {df_aux1[coluna][0]}')
-    st.dataframe(df1)
-
+    
     for index, row in df1.iterrows():
-        dia = index + 1  # Supondo que os dias começam de 1 e o índice é 0-based
+        dia = index + 1
         for col in df1.columns:
             if row[col] == "-":
-                df1.at[index, col] = 0
-                horario = col  # A coluna representa a hora
+                horario = col
                 st.warning(f"No dia {dia} e horário {horario} não haviam dados, foram considerados como 0.")
-
+    df1 = df1.apply(pd.to_numeric, errors='coerce').fillna(0)
+    st.dataframe(df1)
+           
     df_aux2 = pd.read_excel(upload_file, sheet_name = 4, engine=ferramenta, nrows=1) 
     df_aux2.columns = df_aux2.columns.astype(str)
     df2 = pd.read_excel(upload_file, sheet_name = 4, engine=ferramenta, skiprows=2)
@@ -330,16 +330,16 @@ if upload_file is not None and ferramenta != '':
     pos = df_aux2[coluna].name.find(")")
     df_aux2[coluna].name = df_aux2[coluna].name[:pos+1]
     st.write(f'{df_aux2[coluna].name} - {medida[3]} - {df_aux2[coluna][0]}')
-    st.dataframe(df2)
     
     for index, row in df2.iterrows():
-        dia = index + 1  # Supondo que os dias começam de 1 e o índice é 0-based
+        dia = index + 1
         for col in df2.columns:
             if row[col] == "-":
-                df2.at[index, col] = 0
-                horario = col  # A coluna representa a hora
-                st.warning(f"No dia {dia} e hora {horario} não haviam dados, foram considerados como 0.")
-
+                horario = col
+                st.warning(f"No dia {dia} e horário {horario} não haviam dados, foram considerados como 0.")
+    df2 = df2.apply(pd.to_numeric, errors='coerce').fillna(0)
+    st.dataframe(df2)
+    
     if analise == 'Dia':
         df1_dia = df1.iloc[day-1:day, 1:25]                
         valores_y1 = df1_dia.iloc[0, :].values
