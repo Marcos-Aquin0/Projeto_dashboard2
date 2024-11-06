@@ -452,7 +452,7 @@ if upload_file is not None and ferramenta != '':
         fig.update_layout(
             title=f'Gráfico para Direção e Velocidade do Vento - {mes_analise} - {dia_inicial} à {dia_final}',
             xaxis=dict(title='Dia', range=[dia_inicial, dia_final], tickmode='linear', tick0=1, dtick=1), 
-            yaxis=dict(range=[0, maximo1]), # Escala para direção
+            yaxis=dict(range=[0, 360]), # Escala para direção
             yaxis2=dict(range=[0, maximo2], overlaying='y', side='right'),  # Escala para velocidade
             legend=dict(x=0.5, y=1.01, xanchor='center', yanchor='bottom', orientation='h')
         )
@@ -525,7 +525,7 @@ if upload_file is not None and ferramenta != '':
         fig.update_layout(
             title=f'Gráfico para Direção e Velocidade do Vento - {mes_analise} - Hora {horario}',
             xaxis=dict(title='Dia', range=[1, maximo_dias], tickmode='linear', tick0=1, dtick=1), 
-            yaxis=dict(range=[0, maximo1]), # Escala para direção
+            yaxis=dict(range=[0, 360]), # Escala para direção
             yaxis2=dict(range=[0, maximo2], overlaying='y', side='right'),  # Escala para velocidade
             legend=dict(x=0.5, y=1.01, xanchor='center', yanchor='bottom', orientation='h')
         )
@@ -607,7 +607,7 @@ if upload_file is not None and ferramenta != '':
         fig.update_layout(
             title=f'Gráfico para Direção e Velocidade do Vento - Média dos horários no mês inteiro de {mes_analise} ',
             xaxis=dict(title='Hora', range=[1, 24], tickmode='linear', tick0=1, dtick=1), 
-            yaxis=dict(range=[0, maximo1]), # Escala para direção
+            yaxis=dict(range=[0, 360]), # Escala para direção
             yaxis2=dict(range=[0, maximo2], overlaying='y', side='right'),  # Escala para velocidade
             legend=dict(x=0.5, y=1.01, xanchor='center', yanchor='bottom', orientation='h')
         )
