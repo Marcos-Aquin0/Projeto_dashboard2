@@ -210,9 +210,21 @@ if upload_file is not None and ferramenta != '':
             for day in range(dia_inicial, dia_final+1):
                 df_dia = df1.iloc[day-1:day, 1:25]                
                 valores_y = df_dia.iloc[0, :].values
-                lista_valores_media.append(valores_y.mean())
-                lista_valores_maximo.append(valores_y.max())
-                lista_valores_minimo.append(valores_y.min())
+                # Filtrar valores NaN para cálculos corretos de média, máximo e mínimo
+                valores_validos = valores_y[~np.isnan(valores_y)]
+                # Se não há valores válidos, usa NaN; caso contrário, calcula estatísticas
+                if len(valores_validos) == 0:
+                    lista_valores_media.append(np.nan)
+                    lista_valores_maximo.append(np.nan)
+                    lista_valores_minimo.append(np.nan)
+                else:
+                    # Adicionar aviso se houver valores nulos excluídos da média
+                    if len(valores_validos) < len(valores_y):
+                        st.info(f"Dia {day}: {len(valores_y) - len(valores_validos)} valores nulos foram desconsiderados no cálculo da média, máxima e mínima. Média calculada com {len(valores_validos)} valores.")
+                    
+                    lista_valores_media.append(valores_validos.mean())
+                    lista_valores_maximo.append(valores_validos.max())
+                    lista_valores_minimo.append(valores_validos.min())
 
             dias = list(range(dia_inicial, dia_final+1)) #lista com os dias escolhidos no intervalo
             
@@ -246,9 +258,13 @@ if upload_file is not None and ferramenta != '':
                     yaxis='y3', hoverinfo='text'
                 )
             )   
+            # Filtrar valores não-NaN para encontrar máximo e mínimo corretos para o gráfico
+            valores_validos_max = [x for x in lista_valores_maximo if not np.isnan(x)]
+            valores_validos_min = [x for x in lista_valores_minimo if not np.isnan(x)]
+            
             #encontrar o valor máximo e mínimo para ajustar a escala do gráfico e facilitar a visualização
-            maximo = encontrar_max(lista_valores_maximo)
-            minimo = encontrar_min(lista_valores_minimo)
+            maximo = encontrar_max(valores_validos_max) if valores_validos_max else 1
+            minimo = encontrar_min(valores_validos_min) if valores_validos_min else 0
             # Atualizar o layout para adicionar o eixo y2 e y3 sobre y1
             fig.update_layout(
                 title=f'Gráfico para {df_aux[coluna].name} - {medida[i]} - {mes_analise}',
@@ -281,10 +297,29 @@ if upload_file is not None and ferramenta != '':
 
         elif analise == "Média Horas":
             lista_valores_media = []
+            valores_nulos_por_hora = {}
+            
             for hora in range(1, 25):
                 df_dia = df1.iloc[:maximo_dias, hora]                
                 valores_y = df_dia.values
-                lista_valores_media.append(valores_y.mean())
+                # Filtrar valores NaN para cálculo correto da média
+                valores_validos = valores_y[~np.isnan(valores_y)]
+                # Se não há valores válidos, usa NaN; caso contrário, calcula a média
+                if len(valores_validos) == 0:
+                    lista_valores_media.append(np.nan)
+                else:
+                    # Armazenar informação sobre valores nulos para mostrar no aviso depois
+                    if len(valores_validos) < len(valores_y):
+                        valores_nulos_por_hora[hora] = len(valores_y) - len(valores_validos)
+                        
+                    lista_valores_media.append(valores_validos.mean())
+            
+            # Mostrar aviso sobre valores nulos
+            if valores_nulos_por_hora:
+                aviso = "Valores nulos foram desconsiderados no cálculo das médias:\n"
+                for hora, count in valores_nulos_por_hora.items():
+                    aviso += f"- Hora {hora}: {count} valores nulos encontrados (média calculada com {maximo_dias - count} dias)\n"
+                st.info(aviso)
 
             horas = list(range(1, 25)) #lista com os dias escolhidos no intervalo
             
@@ -425,13 +460,42 @@ if upload_file is not None and ferramenta != '':
     elif analise == "Mês":
         lista1_valores_media = []
         lista2_valores_media = []
+        valores_nulos_por_dia = {}
+        
         for day in range(dia_inicial, dia_final+1):
             df1_dia = df1.iloc[day-1:day, 1:25]                
             valores_y1 = df1_dia.iloc[0, :].values
-            lista1_valores_media.append(valores_y1.mean())
+            # Filtrar valores NaN para cálculo correto da média
+            valores_validos1 = valores_y1[~np.isnan(valores_y1)]
+            
             df2_dia = df2.iloc[day-1:day, 1:25]                
             valores_y2 = df2_dia.iloc[0, :].values
-            lista2_valores_media.append(valores_y2.mean())
+            # Filtrar valores NaN para cálculo correto da média
+            valores_validos2 = valores_y2[~np.isnan(valores_y2)]
+            
+            # Registrar dias com valores nulos
+            if len(valores_validos1) < len(valores_y1) or len(valores_validos2) < len(valores_y2):
+                valores_nulos_por_dia[day] = {
+                    'direção': len(valores_y1) - len(valores_validos1),
+                    'velocidade': len(valores_y2) - len(valores_validos2)
+                }
+            
+            if len(valores_validos1) == 0:
+                lista1_valores_media.append(np.nan)
+            else:
+                lista1_valores_media.append(valores_validos1.mean())
+                
+            if len(valores_validos2) == 0:
+                lista2_valores_media.append(np.nan)
+            else:
+                lista2_valores_media.append(valores_validos2.mean())
+        
+        # Mostrar aviso sobre valores nulos
+        if valores_nulos_por_dia:
+            aviso = "Valores nulos foram desconsiderados no cálculo das médias:\n"
+            for dia, counts in valores_nulos_por_dia.items():
+                aviso += f"- Dia {dia}: {counts['direção']} valores nulos de direção e {counts['velocidade']} de velocidade foram ignorados\n"
+            st.info(aviso)
 
         dias = list(range(dia_inicial, dia_final+1))
         # um gráfico com os valores de média, um com minima e um com maxima
@@ -454,9 +518,13 @@ if upload_file is not None and ferramenta != '':
                 yaxis='y2', hoverinfo='text'
             )
         )   
-           
-        maximo1 = encontrar_max(valores_y1)
-        maximo2 = encontrar_max(valores_y2)
+        
+        # Filtrar valores não-NaN para encontrar máximo correto para o gráfico
+        valores_validos1 = [x for x in lista1_valores_media if not np.isnan(x)]
+        valores_validos2 = [x for x in lista2_valores_media if not np.isnan(x)]
+        
+        maximo1 = encontrar_max(valores_validos1) if valores_validos1 else 360
+        maximo2 = encontrar_max(valores_validos2) if valores_validos2 else 1
             
         fig.update_layout(
             title=f'Gráfico para Direção e Velocidade do Vento - {mes_analise} - {dia_inicial} à {dia_final}',
@@ -589,13 +657,42 @@ if upload_file is not None and ferramenta != '':
     elif analise == "Média Horas":
         lista1_valores_media = []
         lista2_valores_media = []
+        valores_nulos_por_hora = {}
+        
         for hora in range(1, 25):
             df1_dia = df1.iloc[:maximo_dias, hora]                
             valores_y1 = df1_dia.values
-            lista1_valores_media.append(valores_y1.mean())
+            # Filtrar valores NaN para cálculo correto da média
+            valores_validos1 = valores_y1[~np.isnan(valores_y1)]
+            
             df2_dia = df2.iloc[:maximo_dias, hora]                
             valores_y2 = df2_dia.values
-            lista2_valores_media.append(valores_y2.mean())
+            # Filtrar valores NaN para cálculo correto da média
+            valores_validos2 = valores_y2[~np.isnan(valores_y2)]
+            
+            # Registrar horas com valores nulos
+            if len(valores_validos1) < len(valores_y1) or len(valores_validos2) < len(valores_y2):
+                valores_nulos_por_hora[hora] = {
+                    'direção': len(valores_y1) - len(valores_validos1),
+                    'velocidade': len(valores_y2) - len(valores_validos2)
+                }
+                
+            if len(valores_validos1) == 0:
+                lista1_valores_media.append(np.nan)
+            else:
+                lista1_valores_media.append(valores_validos1.mean())
+                
+            if len(valores_validos2) == 0:
+                lista2_valores_media.append(np.nan)
+            else:
+                lista2_valores_media.append(valores_validos2.mean())
+
+        # Mostrar aviso sobre valores nulos
+        if valores_nulos_por_hora:
+            aviso = "Valores nulos foram desconsiderados no cálculo das médias:\n"
+            for hora, counts in valores_nulos_por_hora.items():
+                aviso += f"- Hora {hora}: {counts['direção']} valores nulos de direção e {counts['velocidade']} de velocidade foram ignorados\n"
+            st.info(aviso)
 
         horas = list(range(1, 25)) #lista com os dias escolhidos no intervalo
 
@@ -619,8 +716,12 @@ if upload_file is not None and ferramenta != '':
             )
         )   
 
-        maximo1 = encontrar_max(lista1_valores_media)
-        maximo2 = encontrar_max(lista2_valores_media)
+        # Filtrar valores não-NaN para encontrar máximo correto para o gráfico
+        valores_validos1 = [x for x in lista1_valores_media if not np.isnan(x)]
+        valores_validos2 = [x for x in lista2_valores_media if not np.isnan(x)]
+        
+        maximo1 = encontrar_max(valores_validos1) if valores_validos1 else 360
+        maximo2 = encontrar_max(valores_validos2) if valores_validos2 else 1
 
         fig.update_layout(
             title=f'Gráfico para Direção e Velocidade do Vento - Média dos horários no mês inteiro de {mes_analise} ',
