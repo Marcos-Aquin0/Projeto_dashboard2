@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 import openpyxl
 import xlrd
 import copy
+import numpy as np
 
 #função para categorizar os dados: direção do vento em graus na rosa dos ventos
 def categorizar_direcao_16(dict_direcoes, graus, velocidade, indice):
@@ -122,7 +123,7 @@ if upload_file is not None and ferramenta != '':
     st.sidebar.write("Você quer ver os gráficos por mês (dia a dia, usando a média diária), por dia (hora a hora) ou o mês por uma hora em específico?")
     
     #definir o limite de dias, de acordo com o mês (se tem 31, 30 ou 28 dias)
-    opcoes_31 = ["Janeiro", "Jan", "Março", "mar", "Maio", "maio", "Julho", "jul", 
+    opcoes_31 = ["Janeiro", "jan", "Março", "mar", "Maio", "maio", "Julho", "jul", 
                  "Agosto", "ago", "Outubro", "out", "Dezembro", "dez"]
     opcoes_30 = ["Abril", "abr", "Junho", "jun", "Setembro", "set", "Novembro", "nov"]
     opcoes_28 = ["Fevereiro", "fev"]
@@ -148,7 +149,7 @@ if upload_file is not None and ferramenta != '':
                          Por exemplo, ao escolher a hora 3, serão avaliados todos os dados referentes à hora 3 de cada dia""")
         horario = st.sidebar.number_input("Horário para análise", 1, 24, 1)
     elif analise == 'Média Horas':
-        st.sidebar.write("Esse modo de análise é para o mês inteiro, pegando a média de cada hora do dia")
+        st.sidebar.write("Esse modo de análise é para o mês inteiro, pegando a média de cada hora do dia (média dos valores por colunas)")
     
     #lista com as unidades de medida de cada parâmetro a ser inserida no gráfico
     medida = ['(ºC)', '(%)', 'Hectopascal (hPa)', '(graus)', '(m/s)']   
@@ -172,14 +173,15 @@ if upload_file is not None and ferramenta != '':
         df1 = df1.drop(df1.index[maximo_dias:])
         
 
-        # Substituir "-" por 0 e gerar avisos
+        # Substituir "-" por NaN e gerar avisos
         for index, row in df1.iterrows():
             dia = index + 1
             for col in df1.columns:
                 if row[col] == "-":
-                    horario = col
-                    st.warning(f"No dia {dia} e horário {horario} não haviam dados, foram considerados como 0.")
-        df1 = df1.apply(pd.to_numeric, errors='coerce').fillna(0)
+                    horario_ = col
+                    st.warning(f"No dia {dia} e horário {horario_} não haviam dados devido a erros de medição.")
+        # Converter para numérico, com valores "-" tornando-se NaN
+        df1 = df1.apply(pd.to_numeric, errors='coerce')
         st.dataframe(df1)
         if analise == 'Dia':  
             #realizar uma filtragem para pegar apenas os valores do dia escolhido e as 24 horas
@@ -260,8 +262,9 @@ if upload_file is not None and ferramenta != '':
             st.plotly_chart(fig, use_container_width=True) #plotagem
 
         elif analise == "Hora":
-            df_dia = df1.iloc[:maximo_dias, horario] #pegar todos os valores da coluna referente ao horário escolhido
-            valores_y = df_dia.values
+            coluna_indice = int(horario)
+            df1_dia = df1.iloc[:maximo_dias, coluna_indice]
+            valores_y = df1_dia.values
             dias = list(range(1, maximo_dias+1)) #lista com os dias do mês
             
             fig = px.line(x=dias, y=valores_y, labels={'x': 'Dia', 'y': f'{df_aux[coluna].name}'}, 
@@ -314,9 +317,10 @@ if upload_file is not None and ferramenta != '':
         dia = index + 1
         for col in df1.columns:
             if row[col] == "-":
-                horario = col
-                st.warning(f"No dia {dia} e horário {horario} não haviam dados, foram considerados como 0.")
-    df1 = df1.apply(pd.to_numeric, errors='coerce').fillna(0)
+                horario_ = col
+                st.warning(f"No dia {dia} e horário {horario_} não haviam dados devido a erros de medição.")
+    # Converter para numérico, com valores "-" tornando-se NaN
+    df1 = df1.apply(pd.to_numeric, errors='coerce')
     st.dataframe(df1)
            
     df_aux2 = pd.read_excel(upload_file, sheet_name = 4, engine=ferramenta, nrows=1) 
@@ -335,9 +339,10 @@ if upload_file is not None and ferramenta != '':
         dia = index + 1
         for col in df2.columns:
             if row[col] == "-":
-                horario = col
-                st.warning(f"No dia {dia} e horário {horario} não haviam dados, foram considerados como 0.")
-    df2 = df2.apply(pd.to_numeric, errors='coerce').fillna(0)
+                horario_ = col
+                st.warning(f"No dia {dia} e horário {horario_} não haviam dados devido a erros de medição.")
+    # Converter para numérico, com valores "-" tornando-se NaN
+    df2 = df2.apply(pd.to_numeric, errors='coerce')
     st.dataframe(df2)
     
     if analise == 'Dia':
@@ -390,8 +395,12 @@ if upload_file is not None and ferramenta != '':
         total = 0  
         #para cada coluna, categorizar a direção e a velocidade
         for indice, coluna in enumerate(df1_dia):
-            categorizar_direcao_16(dict_direcoes, df1_dia[coluna][day-1].astype(float), df2_dia[coluna][day-1].astype(float), indice)
-            total +=1             
+            valor1 = df1_dia[coluna][day-1].astype(float)
+            valor2 = df2_dia[coluna][day-1].astype(float)
+            # Verificar se algum dos valores é NaN
+            if not (np.isnan(valor1) or np.isnan(valor2)):
+                categorizar_direcao_16(dict_direcoes, valor1, valor2, indice)
+                total += 1
           
         #separando as informações de direção, velocidade e frequência para tratar como dataframe
         titulo_grafico = f"Rosa dos Ventos - {mes_analise} - Dia {day}"
@@ -465,8 +474,12 @@ if upload_file is not None and ferramenta != '':
         total = 0  
 
         for indice, coluna in enumerate(lista1_valores_media):
-            categorizar_direcao_16(dict_direcoes, lista1_valores_media[indice].astype(float), lista2_valores_media[indice].astype(float), indice)
-            total +=1             
+            valor1 = lista1_valores_media[indice].astype(float)
+            valor2 = lista2_valores_media[indice].astype(float)
+            # Verificar se algum dos valores é NaN
+            if not (np.isnan(valor1) or np.isnan(valor2)):
+                categorizar_direcao_16(dict_direcoes, valor1, valor2, indice)
+                total += 1
                            
         titulo_grafico = f"Rosa dos Ventos - {mes_analise} - {dia_inicial} à {dia_final}"
         plotar_rosa(dict_direcoes, total, titulo_grafico)
@@ -492,10 +505,11 @@ if upload_file is not None and ferramenta != '':
             
 
     elif analise == "Hora":
-        df1_dia = df1.iloc[:maximo_dias, horario]
+        coluna_indice = int(horario)
+        df1_dia = df1.iloc[:maximo_dias, coluna_indice]
         valores_y1 = df1_dia.values
 
-        df2_dia = df2.iloc[:maximo_dias, horario]
+        df2_dia = df2.iloc[:maximo_dias, coluna_indice]
         valores_y2 = df2_dia.values
         dias = list(range(1, maximo_dias+1))
         
@@ -539,8 +553,12 @@ if upload_file is not None and ferramenta != '':
         total = 0  
 
         for indice, coluna in enumerate(valores_y1):
-            categorizar_direcao_16(dict_direcoes, valores_y1[indice].astype(float), valores_y2[indice].astype(float), indice)
-            total +=1             
+            valor1 = valores_y1[indice].astype(float)
+            valor2 = valores_y2[indice].astype(float)
+            # Verificar se algum dos valores é NaN
+            if not (np.isnan(valor1) or np.isnan(valor2)):
+                categorizar_direcao_16(dict_direcoes, valor1, valor2, indice)
+                total += 1
                            
         #separando as informações de direção, velocidade e frequência para tratar como dataframe
         titulo_grafico = f"Rosa dos Ventos - {mes_analise} - Hora {horario}"
@@ -620,8 +638,12 @@ if upload_file is not None and ferramenta != '':
         total = 0  
 
         for indice, coluna in enumerate(lista1_valores_media):
-            categorizar_direcao_16(dict_direcoes, lista1_valores_media[indice].astype(float), lista2_valores_media[indice].astype(float), indice)
-            total +=1             
+            valor1 = lista1_valores_media[indice].astype(float)
+            valor2 = lista2_valores_media[indice].astype(float)
+            # Verificar se algum dos valores é NaN
+            if not (np.isnan(valor1) or np.isnan(valor2)):
+                categorizar_direcao_16(dict_direcoes, valor1, valor2, indice)
+                total += 1
                            
         titulo_grafico = f"Rosa dos Ventos - {mes_analise} - Média das horas"
         plotar_rosa(dict_direcoes, total, titulo_grafico)
