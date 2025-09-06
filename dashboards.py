@@ -460,6 +460,7 @@ if upload_file is not None and ferramenta != '':
     elif analise == "Mês":
         lista1_valores_media = []
         lista2_valores_media = []
+        lista3_valores_max = []
         valores_nulos_por_dia = {}
         
         for day in range(dia_inicial, dia_final+1):
@@ -472,7 +473,7 @@ if upload_file is not None and ferramenta != '':
             valores_y2 = df2_dia.iloc[0, :].values
             # Filtrar valores NaN para cálculo correto da média
             valores_validos2 = valores_y2[~np.isnan(valores_y2)]
-            
+                
             # Registrar dias com valores nulos
             if len(valores_validos1) < len(valores_y1) or len(valores_validos2) < len(valores_y2):
                 valores_nulos_por_dia[day] = {
@@ -487,8 +488,10 @@ if upload_file is not None and ferramenta != '':
                 
             if len(valores_validos2) == 0:
                 lista2_valores_media.append(np.nan)
+                lista3_valores_max.append(np.nan)
             else:
                 lista2_valores_media.append(valores_validos2.mean())
+                lista3_valores_max.append(valores_validos2.max())
         
         # Mostrar aviso sobre valores nulos
         if valores_nulos_por_dia:
@@ -513,24 +516,36 @@ if upload_file is not None and ferramenta != '':
         fig.add_trace(
             go.Scatter(
                 x=dias, y=lista2_valores_media, mode='lines+markers',
-                name='Velocidade do Vento',
+                name='Velocidade do Vento Média',
                 hovertemplate='Dia: %{x}<br> Velocidade (m/s): %{y:.2f}',
                 yaxis='y2', hoverinfo='text'
+            )
+        )   
+
+        fig.add_trace(
+            go.Scatter(
+                x=dias, y=lista3_valores_max, mode='lines+markers',
+                name='Velocidade do Vento Máxima',
+                hovertemplate='Dia: %{x}<br> Velocidade (m/s): %{y:.2f}',
+                yaxis='y3', hoverinfo='text'
             )
         )   
         
         # Filtrar valores não-NaN para encontrar máximo correto para o gráfico
         valores_validos1 = [x for x in lista1_valores_media if not np.isnan(x)]
         valores_validos2 = [x for x in lista2_valores_media if not np.isnan(x)]
+        valores_validos3 = [x for x in lista3_valores_max if not np.isnan(x)]
         
         maximo1 = encontrar_max(valores_validos1) if valores_validos1 else 360
         maximo2 = encontrar_max(valores_validos2) if valores_validos2 else 1
-            
+        maximo3 = encontrar_max(valores_validos3) if valores_validos3 else 2
+        
         fig.update_layout(
-            title=f'Gráfico para Direção e Velocidade do Vento - {mes_analise} - {dia_inicial} à {dia_final}',
+            title=f'Gráfico para Direção e Velocidade do Vento (Média e Máxima) - {mes_analise} - {dia_inicial} à {dia_final}',
             xaxis=dict(title='Dia', range=[dia_inicial, dia_final], tickmode='linear', tick0=1, dtick=1), 
             yaxis=dict(range=[0, 360]), # Escala para direção
-            yaxis2=dict(range=[0, maximo2], overlaying='y', side='right'),  # Escala para velocidade
+            yaxis2=dict(range=[0, 3], overlaying='y', side='right'),  # Escala para velocidade
+            yaxis3=dict(range=[0, 3], overlaying='y', side='right'),
             legend=dict(x=0.5, y=1.01, xanchor='center', yanchor='bottom', orientation='h')
         )
             
