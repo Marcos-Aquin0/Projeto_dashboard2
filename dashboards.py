@@ -544,8 +544,8 @@ if upload_file is not None and ferramenta != '':
             title=f'Gráfico para Direção e Velocidade do Vento (Média e Máxima) - {mes_analise} - {dia_inicial} à {dia_final}',
             xaxis=dict(title='Dia', range=[dia_inicial, dia_final], tickmode='linear', tick0=1, dtick=1), 
             yaxis=dict(range=[0, 360]), # Escala para direção
-            yaxis2=dict(range=[0, 3], overlaying='y', side='right'),  # Escala para velocidade
-            yaxis3=dict(range=[0, 3], overlaying='y', side='right'),
+            yaxis2=dict(range=[0, maximo3], overlaying='y', side='right'),  # Escala para velocidade
+            yaxis3=dict(range=[0, maximo3], overlaying='y', side='right'),
             legend=dict(x=0.5, y=1.01, xanchor='center', yanchor='bottom', orientation='h')
         )
             
